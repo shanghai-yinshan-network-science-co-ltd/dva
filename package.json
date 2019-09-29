@@ -1,0 +1,26 @@
+{
+  "name": "dva",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "homepage": "https://github.com/shanghai-yinshan-network-science-co-ltd/dva.git",
+  "readme": "https://github.com/shanghai-yinshan-network-science-co-ltd/dva.git#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shanghai-yinshan-network-science-co-ltd/dva.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "invariant": "^2.2.4",
+    "redux": "^4.0.4",
+    "flatten": "^1.0.2",
+    "global": "^4.4.0",
+    "redux-saga": "^1.1.1",
+    "warning": "^4.0.3",
+    "is-plain-object": "^3.0.0"
+  }
+}
