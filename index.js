@@ -163,7 +163,7 @@ export default function (options) {
   };
 
 
-  if (!global.registered) options.models.forEach(model => app.model(model));
+  if (!global.registered) options.models && options.models.forEach(model => app.model(model));
   global.registered = true;
   return app
 }
