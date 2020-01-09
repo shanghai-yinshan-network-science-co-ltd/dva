@@ -2,18 +2,18 @@ import invariant from 'invariant';
 // eslint-disable-next-line import/no-namespace
 import * as sagaEffects from 'redux-saga/effects';
 import warning from 'warning';
-import { NAMESPACE_SEP } from './constants';
+import {NAMESPACE_SEP} from './constants';
 import prefixType from './prefixType';
 
-const {takeLatest,takeEvery,throttle,takeLeading} =sagaEffects;
+const {takeLatest, takeEvery, throttle, takeLeading} = sagaEffects;
 
 export default function getSaga(effects, model, onError, onEffect) {
-  return function*() {
+  return function* () {
     for (const key in effects) {
       if (Object.prototype.hasOwnProperty.call(effects, key)) {
         const watcher = getWatcher(key, effects[key], model, onError, onEffect);
         const task = yield sagaEffects.fork(watcher);
-        yield sagaEffects.fork(function*() {
+        yield sagaEffects.fork(function* () {
           yield sagaEffects.take(`${model.namespace}/@@CANCEL_EFFECTS`);
           yield sagaEffects.cancel(task);
         });
@@ -22,40 +22,43 @@ export default function getSaga(effects, model, onError, onEffect) {
   };
 }
 
-
 function getWatcher(key, _effect, model, onError, onEffect) {
   let effect = _effect;
   let type = 'takeEvery';
+  let handleSaga;
   let ms;
 
   if (Array.isArray(_effect)) {
     effect = _effect[0];
     const opts = _effect[1];
-    if (opts && opts.type) {
+    if (typeof opts === 'function') {
+      handleSaga = opts;
+    } else if (opts && opts.type) {
       type = opts.type;
       if (type === 'throttle') {
         invariant(
-          opts.ms,
-          'app.start: opts.ms should be defined if type is throttle'
+            opts.ms,
+            'app.start: opts.ms should be defined if type is throttle',
         );
         ms = opts.ms;
       }
     }
     invariant(
-      ['watcher', 'takeEvery', 'takeLatest', 'throttle'].indexOf(type) > -1,
-      'app.start: effect type should be takeEvery, takeLatest, throttle or watcher'
+        ['watcher', 'takeEvery', 'takeLatest', 'throttle'].indexOf(type) > -1,
+        'app.start: effect type should be takeEvery, takeLatest, throttle or watcher',
     );
   }
 
-  function noop() {}
+  function noop() {
+  }
 
   function* sagaWithCatch(...args) {
-    const { __dva_resolve: resolve = noop, __dva_reject: reject = noop } =
-      args.length > 0 ? args[0] : {};
+    const {__dva_resolve: resolve = noop, __dva_reject: reject = noop} =
+        args.length > 0 ? args[0] : {};
     try {
-      yield sagaEffects.put({ type: `${key}${NAMESPACE_SEP}@@start` });
+      yield sagaEffects.put({type: `${key}${NAMESPACE_SEP}@@start`});
       const ret = yield effect(...args.concat(createEffects(model)));
-      yield sagaEffects.put({ type: `${key}${NAMESPACE_SEP}@@end` });
+      yield sagaEffects.put({type: `${key}${NAMESPACE_SEP}@@end`});
       resolve(ret);
     } catch (e) {
       onError(e, {
@@ -70,23 +73,29 @@ function getWatcher(key, _effect, model, onError, onEffect) {
 
   const sagaWithOnEffect = applyOnEffect(onEffect, sagaWithCatch, model, key);
 
+  if (typeof handleSaga === 'function') {
+    return function* () {
+      yield handleSaga(key, sagaWithOnEffect);
+    };
+  }
+
   switch (type) {
     case 'watcher':
       return sagaWithCatch;
     case 'takeLatest':
-      return function*() {
+      return function* () {
         yield takeLatest(key, sagaWithOnEffect);
       };
     case 'throttle':
-      return function*() {
+      return function* () {
         yield throttle(ms, key, sagaWithOnEffect);
       };
     case 'takeLeading':
-      return function*() {
-        yield takeLeading(ms, key, sagaWithOnEffect);
+      return function* () {
+        yield takeLeading(key, sagaWithOnEffect);
       };
     default:
-      return function*() {
+      return function* () {
         yield takeEvery(key, sagaWithOnEffect);
       };
   }
@@ -96,16 +105,17 @@ function createEffects(model) {
   function assertAction(type, name) {
     invariant(type, 'dispatch: action should be a plain Object with type');
     warning(
-      type.indexOf(`${model.namespace}${NAMESPACE_SEP}`) !== 0,
-      `[${name}] ${type} should not be prefixed with namespace ${
-        model.namespace
-      }`
+        type.indexOf(`${model.namespace}${NAMESPACE_SEP}`) !== 0,
+        `[${name}] ${type} should not be prefixed with namespace ${
+            model.namespace
+        }`,
     );
   }
+
   function put(action) {
-    const { type } = action;
+    const {type} = action;
     assertAction(type, 'sagaEffects.put');
-    return sagaEffects.put({ ...action, type: prefixType(type, model) });
+    return sagaEffects.put({...action, type: prefixType(type, model)});
   }
 
   // The operator `put` doesn't block waiting the returned promise to resolve.
@@ -114,13 +124,14 @@ function createEffects(model) {
   // and increase the reusability by seperate the effect in stand-alone pieces.
   // https://github.com/redux-saga/redux-saga/issues/336
   function putResolve(action) {
-    const { type } = action;
+    const {type} = action;
     assertAction(type, 'sagaEffects.put.resolve');
     return sagaEffects.put.resolve({
       ...action,
       type: prefixType(type, model),
     });
   }
+
   put.resolve = putResolve;
 
   function take(type) {
@@ -129,19 +140,20 @@ function createEffects(model) {
       return sagaEffects.take(prefixType(type, model));
     } else if (Array.isArray(type)) {
       return sagaEffects.take(
-        type.map(t => {
-          if (typeof t === 'string') {
-            assertAction(t, 'sagaEffects.take');
-            return prefixType(t, model);
-          }
-          return t;
-        })
+          type.map(t => {
+            if (typeof t === 'string') {
+              assertAction(t, 'sagaEffects.take');
+              return prefixType(t, model);
+            }
+            return t;
+          }),
       );
     } else {
       return sagaEffects.take(type);
     }
   }
-  return { ...sagaEffects, put, take };
+
+  return {...sagaEffects, put, take};
 }
 
 function applyOnEffect(fns, effect, model, key) {
