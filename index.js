@@ -11,6 +11,9 @@ import {NAMESPACE_SEP} from './src/constants';
 import * as sagaEffects from 'redux-saga/effects';
 import isPlainObject from 'is-plain-object';
 
+export {useModelDispatch,useModelState} from './hooks'
+
+//todo 待删除
 function commonMergeReducer(state, action) {
   if (!Object.prototype.hasOwnProperty.call(action, 'payload')) {
     return state;
@@ -24,27 +27,21 @@ function commonMergeReducer(state, action) {
   return state;
 }
 
-export class ModelEffects {
-}
-
-export class ModelReducers {
-}
-
 function getEffects(effects) {
-  if (isPlainObject(effects)){
+  if (isPlainObject(effects)) {
     return effects;
   }
-  if(typeof effects === 'function'){
+  if (typeof effects === 'function') {
     effects = new effects();
   }
-  let _effects={...effects};
-  while(effects){
+  let _effects = {...effects};
+  while (effects) {
     const prototypeObject = Object.getPrototypeOf(effects);
     if (!prototypeObject || prototypeObject.constructor === ModelEffects) {
       break;
     }
     const keys = Object.getOwnPropertyNames(prototypeObject);
-    for(const key of keys){
+    for (const key of keys) {
       if (key !== 'constructor') {
         _effects[key] = prototypeObject[key];
       }
@@ -106,6 +103,7 @@ export default function(options) {
       }
       $put[_m.namespace] = $put[_m.namespace] || {};
       $putResolve[_m.namespace] = $putResolve[_m.namespace] || {};
+
       let _reducers;
       if (Array.isArray(_m.reducers)) {
         _m.reducers = [..._m.reducers];
@@ -131,11 +129,9 @@ export default function(options) {
       if (_m.effects) {
         for (const key in _m.effects) {
           if (Object.prototype.hasOwnProperty.call(_m.effects, key)) {
-            if (Array.isArray(_m.reducers)) {
-              _m.reducers[0]['return$' + key] = commonMergeReducer;
-            } else {
-              _m.reducers['return$' + key] = commonMergeReducer;
-            }
+            invariant(!Object.prototype.hasOwnProperty.call(_reducers, key),
+                `[app.model] effects and reducers in '${_m.namespace}' model has the same key '${key}'`);
+            _reducers['return$' + key] = commonMergeReducer;
             if (store) {
               createDispatches(_m.namespace, key, store);
             } else {
@@ -146,61 +142,44 @@ export default function(options) {
             if (Array.isArray(effect)) {
               effect = _m.effects[key][0];
             }
-            let bindEffect;
-            const _effect = function(...args) {
-              const action = args[0];
-              args.shift();
-              if (!bindEffect) {
-                bindEffect = effect.bind(
-                    {put: $put, putResolve: $putResolve, ...$put[_m.namespace]});
-              }
-              return bindEffect(action.payload, action.meta, ...args);
-            };
+            // const _effect = function(...args) {
+            //   const action = args[0];
+            //   args.shift();
+            //   if (!bindEffect) {
+            //     bindEffect = effect.bind(
+            //         {put: $put, putResolve: $putResolve, ...$put[_m.namespace]});
+            //   }
+            //   return bindEffect(action.payload, action.meta, ...args);
+            // };
             if (Array.isArray(effect)) {
-              _m.effects[key][0] = _effect;
+              _m.effects[key][0] = effect.bind($put[_m.namespace]);
             } else {
-              _m.effects[key] = _effect;
+              _m.effects[key] = effect.bind($put[_m.namespace]);
             }
           }
         }
       }
+      $put[_m.namespace].getState = function(selector) {
+        return sagaEffects.select(selector);
+      };
+      $put[_m.namespace].getModelState = function(models, selector) {
+        return sagaEffects.select((state) => selector(Object.keys(models).reduce((_state, key) => {
+          _state[key] = state[models[key].namespace];
+          return _state;
+        }, {})));
+      };
+      $put[_m.namespace].createModelPut = function(models) {
+        return Object.keys(models).reduce((puts, key) => {
+          puts[key] = $put[models[key].namespace];
+          return puts;
+        }, {});
+      };
       model(_m);
     };
   }
 
   const model = app.model.bind(app);
   const start = app.start.bind(app);
-
-  app.use({
-    onEffect(effect, {put}, model, actionType) {
-      const {namespace} = model;
-
-      return function* (...args) {
-
-        if (args.length > 0 && args[0].__dva_resolve) {
-          const resolve = args[0].__dva_resolve;
-          const reject = args[0].__dva_reject;
-          let payload;
-          args[0].__dva_resolve = function(ret) {
-            payload = ret;
-            resolve(ret);
-          };
-          args[0].__dva_reject = function(error) {
-            reject(error);
-          };
-          yield effect(...args);
-          if (payload !== undefined) {
-            yield put({
-              type: actionType.replace(namespace + '/', namespace + '/return$'),
-              payload,
-            });
-          }
-        } else {
-          yield effect(...args);
-        }
-      };
-    },
-  });
 
   app.model = createModel(model, undefined);
 
@@ -231,4 +210,9 @@ export default function(options) {
   }
   global.registered = true;
   return app;
+}
+
+
+export function createModel(m) {
+  return m;
 }
