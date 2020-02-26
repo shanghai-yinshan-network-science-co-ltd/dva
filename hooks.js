@@ -13,7 +13,7 @@ export function useModelDispatch(models) {
   }, {});
 }
 
-export function useModelState(models, selector, equalityFn) {
+export function useModelSelector(models, selector, equalityFn) {
   return useSelector(
       (state) => selector(Object.keys(models).reduce((_state, key) => {
         _state[key] = state[models[key].namespace];
