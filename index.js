@@ -11,7 +11,7 @@ import {NAMESPACE_SEP} from './src/constants';
 import * as sagaEffects from 'redux-saga/effects';
 import isPlainObject from 'is-plain-object';
 
-export {useModelDispatch,useModelState} from './hooks'
+export {useModelDispatch,useModelSelector} from './hooks'
 
 //todo 待删除
 function commonMergeReducer(state, action) {
