@@ -181,6 +181,17 @@ export default function(options) {
   const model = app.model.bind(app);
   const start = app.start.bind(app);
 
+  app.use({
+    onEffect(effect, {put}, model, actionType) {
+      return function* (...args) {
+        const { result, cancel } = yield  sagaEffects.race({
+          result: sagaEffects.call(effect,...args),
+          cancel: sagaEffects.take(`@@cancel-${actionType}`)
+        });
+      };
+    },
+  });
+
   app.model = createModel(model, undefined);
 
   // eslint-disable-next-line react/display-name
