@@ -184,9 +184,9 @@ export default function(options) {
   app.use({
     onEffect(effect, {put}, model, actionType) {
       return function* (...args) {
-        const { result, cancel } = yield  sagaEffects.race({
+        yield sagaEffects.race({
           result: sagaEffects.call(effect,...args),
-          cancel: sagaEffects.take(`@@cancel-${actionType}`)
+          cancel: sagaEffects.take(`${actionType}/@@cancel`)
         });
       };
     },

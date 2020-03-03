@@ -12,7 +12,7 @@ export default function createPromiseMiddleware(app) {
         });
       });
       promise.cancel = ()=>{
-        dispatch({type:`@@cancel-${type}`})
+        dispatch({type:`${type}/@@cancel`})
       };
       return promise;
     } else {
