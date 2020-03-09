@@ -374,12 +374,15 @@ declare module 'dva' {
     effects: E;
   }
 
-  type GetState<S> = {
+  type ThisModel<S> = {
     getState<TSelected>(selector: (state: S) => TSelected): SelectEffect;
     getModelState<M extends Models, TSelected>(
       models: M,
       selector: (state: {[k in keyof M]: M[k]['state']}) => TSelected,
     ): SelectEffect;
+    createModelPut<M extends Models>(
+        models: M,
+    ): ExtractRematchPutsFromModels<M>;
   };
 
   interface ModelParam<E extends ModelEffects, R extends ModelReducers<S>, S> {
@@ -390,7 +393,7 @@ declare module 'dva' {
       ThisType<
         ExtractRematchPutsFromReducers<R> &
           ExtractRematchPutsFromEffects<E> &
-          GetState<S>
+          ThisModel<S>
       >;
   }
 
