@@ -142,19 +142,15 @@ export default function(options) {
             if (Array.isArray(effect)) {
               effect = _m.effects[key][0];
             }
-            // const _effect = function(...args) {
-            //   const action = args[0];
-            //   args.shift();
-            //   if (!bindEffect) {
-            //     bindEffect = effect.bind(
-            //         {put: $put, putResolve: $putResolve, ...$put[_m.namespace]});
-            //   }
-            //   return bindEffect(action.payload, action.meta, ...args);
-            // };
+            const _effect = function(...args) {
+              const action = args[0];
+              args.shift();
+              return effect.apply($put[_m.namespace],[action.payload, action.meta, ...args]);
+            };
             if (Array.isArray(effect)) {
-              _m.effects[key][0] = effect.bind($put[_m.namespace]);
+              _m.effects[key][0] = _effect;
             } else {
-              _m.effects[key] = effect.bind($put[_m.namespace]);
+              _m.effects[key] = _effect;
             }
           }
         }
