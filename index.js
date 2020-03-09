@@ -156,7 +156,7 @@ export default function(options) {
         }
       }
       $put[_m.namespace].getState = function(selector) {
-        return sagaEffects.select(selector);
+        return sagaEffects.select((state)=>selector(state[_m.namespace]));
       };
       $put[_m.namespace].getModelState = function(models, selector) {
         return sagaEffects.select((state) => selector(Object.keys(models).reduce((_state, key) => {
