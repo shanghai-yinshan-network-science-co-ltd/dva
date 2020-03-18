@@ -221,5 +221,5 @@ export default function(options) {
 
 
 export function createModel(m) {
-  return m;
+  return {...m,state:JSON.parse(JSON.stringify(m.state))};
 }
