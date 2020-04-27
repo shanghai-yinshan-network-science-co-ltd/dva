@@ -29,7 +29,7 @@ function commonMergeReducer(state, action) {
 
 function getEffects(effects) {
   if (isPlainObject(effects)) {
-    return effects;
+    return {...effects};
   }
   if (typeof effects === 'function') {
     effects = new effects();
@@ -148,6 +148,7 @@ export default function(options) {
               return effect.apply($put[_m.namespace],[action.payload, action.meta, ...args]);
             };
             if (Array.isArray(effect)) {
+              _m.effects[key] = [..._m.effects[key]];
               _m.effects[key][0] = _effect;
             } else {
               _m.effects[key] = _effect;
