@@ -296,11 +296,13 @@ declare module 'dva' {
     ? (payload: P) => Action<P, void>
     : (payload: P, meta: M) => Action<P, M>;
 
-  export type RematchPut<P = void, M = void> = [P] extends [void]
-    ? () => PutEffect<Action<any, any>>
-    : [M] extends [void]
-    ? (payload: P) => PutEffect<Action<P, void>>
-    : (payload: P, meta: M) => PutEffect<Action<P, M>>;
+  export type CommonPut<P = void, M = void> = [P] extends [void]
+      ? () => PutEffect<Action<any, any>>
+      : [M] extends [void]
+          ? (payload: P) => PutEffect<Action<P, void>>
+          : (payload: P, meta: M) => PutEffect<Action<P, M>>
+
+  export type RematchPut<P = void, M = void> = CommonPut<P , M> & {resolve: CommonPut<P , M>};
 
   export type RematchDispatcherAsync<P = void, M = void, R = void> = [
     P,

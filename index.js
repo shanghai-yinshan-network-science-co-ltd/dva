@@ -82,7 +82,7 @@ export default function(options) {
     $put[namespace][key].toString = function() {
       return `${namespace}${NAMESPACE_SEP}${key}`;
     };
-    $putResolve[namespace][key] = function(payload, meta) {
+    $put[namespace][key].resolve = $putResolve[namespace][key] = function(payload, meta) {
       return sagaEffects.putResolve(
           {meta, payload, type: `${namespace}${NAMESPACE_SEP}${key}`});
     };
